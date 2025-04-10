@@ -7,7 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RowWinningStrategy implements WinningStrategy {
-    private final Map<Integer, HashMap<Character, Integer>> rowMaps = new HashMap<>();
+    private static  Map<Integer, HashMap<Character, Integer>> rowMaps = new HashMap<>();
+
+    public static Map<Integer, HashMap<Character, Integer>> getRowMaps() {
+        return rowMaps;
+    }
 
     @Override
     public boolean checkWinner(Board board, Move move) {

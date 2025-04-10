@@ -1,6 +1,7 @@
 package com.sarvesh.LLD3.TicTacToe.controller;
 
 import com.sarvesh.LLD3.TicTacToe.exception.InvalidMoveException;
+import com.sarvesh.LLD3.TicTacToe.exception.InvalidUndoException;
 import com.sarvesh.LLD3.TicTacToe.model.Game;
 import com.sarvesh.LLD3.TicTacToe.model.GameState;
 import com.sarvesh.LLD3.TicTacToe.model.Player;
@@ -38,6 +39,11 @@ public class GameController {
     }
 
     public void undo(Game game) {
+        try {
+            game.undo();
+        }catch (InvalidUndoException e){
+            System.out.println(e.getMessage());
+        }
 
     }
 }

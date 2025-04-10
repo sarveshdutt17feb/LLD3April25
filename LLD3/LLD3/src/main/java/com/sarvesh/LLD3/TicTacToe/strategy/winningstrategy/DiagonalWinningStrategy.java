@@ -8,8 +8,17 @@ import java.util.Map;
 
 public class DiagonalWinningStrategy implements WinningStrategy{
     //2 Diagonals.
-    private final Map<Character, Integer> leftDiagonalMap = new HashMap<>(); //starting from 0,0
-    private final Map<Character, Integer> rightDiagonalMap = new HashMap<>(); //starting from 0,n-1
+    private static  Map<Character, Integer> leftDiagonalMap = new HashMap<>(); //starting from 0,0
+    private static  Map<Character, Integer> rightDiagonalMap = new HashMap<>(); //starting from 0,n-1
+
+    public static Map<Character, Integer> getLeftDiagonalMap() {
+        return leftDiagonalMap;
+    }
+
+    public static Map<Character, Integer> getRightDiagonalMap() {
+        return rightDiagonalMap;
+    }
+
     @Override
     public boolean checkWinner(Board board, Move move) {
         int row = move.getCell().getRow();

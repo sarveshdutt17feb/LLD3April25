@@ -7,7 +7,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ColWinningStrategy implements WinningStrategy{
-    Map<Integer, HashMap<Character, Integer>> colMaps = new HashMap<>();
+    private static  Map<Integer, HashMap<Character, Integer>> colMaps = new HashMap<>();
+
+    public static Map<Integer, HashMap<Character, Integer>> getColMaps() {
+        return colMaps;
+    }
+
     @Override
     public boolean checkWinner(Board board, Move move) {
         int col = move.getCell().getCol();
