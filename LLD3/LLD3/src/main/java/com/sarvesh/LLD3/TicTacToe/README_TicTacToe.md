@@ -1,197 +1,446 @@
-# 🎮 Design: Tic Tac Toe - Java OOP LLD
+# Design Tic-Tac-Toe
 
-## 🧩 What is Tic-Tac-Toe?
+## What is Tic-Tac-Toe?
 
-Tic Tac Toe is a 2-player game played on a board of size NxN. Each player takes alternate turns and places their symbol (X or O) on the board. The player who places N of their symbols consecutively in a row, column, or diagonal wins. If all cells are filled and no one wins, it’s a draw.
+TicTacToe is a 2 player game played on a 3 x 3 board. Each player is allotted a symbol (one X and one O). Initially, the board is empty. Alternatively, each player takes a turn and puts their symbol at any empty slot. The first player to get their symbol over a complete row OR a complete column OR a diagonal wins.
 
-You can even play this within Google by searching **“tic tac toe”**!
+You can play the game within Google Search by just searching for “tictactoe”!
 
 ![TicTacToe](https://www.tuitec.com/wp-content/uploads/2016/08/morpion-640x411.jpg)
 
----
 
-## ❓ Functional Questions Considered
+## Questions to Ask
+* Will the game be played amongst only 2 players or can there be any number of players in future?
+* Is the board size restricted to 3x3 or can it be any NxN?
+* Can there be different ways to win?
+* Can one of the players be a bot?
+* Feature Suggestions:
+    * Do we want to time a move? Skip/ Declare the other person as winner if the move doesn’t happen within x seconds.
+    * Do we want to support undo operation?
+    * Can there be some players who are just watching? Not playing.
+    * Do we want to store analytics? Basically previous games, who played what move etc.
+    * Support for tournaments? Basically a set of matches, each match between 2 players of the tournament.
 
-- Is the board always 3x3? ❌ → It’s NxN.
-- Are only 2 players allowed? ✅ for now (but extendable).
-- Can one be a bot? ✅ Yes.
-- Can we undo a move? ✅ Yes.
-- Can we support winning in different ways? ✅ Yes.
-- Is it extensible and testable? ✅ Definitely.
+## Expectations
+* The code should be working and functionally correct
+* Good software design practices should be followed:
+* Code should be modular, readable, extensible
+* Separation of concern should be addressed
+* Project structured well across multiple files/ packages
+* Write unit tests
+* No need of GUI
 
----
 
-## ✅ Requirements
+## Problem Requirements
+* Board can be of any NxN size.
+* There can be two players.
+* Each player will be allotted a symbol.
+* The symbol can be one of O and X.
+* The players can be either humans or bots.
+* Each human player will have a name, email and profile image.
+* Each bot player will have a difficulty level.
+* Any random player can start the game.
+* Then the players will take turns alternatively.
+* The player with any consecutive N symbols in a row, column or diagonal wins.
+* If the board is full and no player has won, the game is a draw.
 
-- Configurable board size (NxN)
-- 2 Players (Human/Bot)
-- Symbols: 'X' and 'O'
-- Alternate moves
-- Winning: full row/column/diagonal with same symbol
-- Draw condition supported
-- Bot with 3 difficulty levels
-- Undo last move (for human)
+## Entities and their attributes
+* Game
+    * Board
+    * Players
+* Board
+    * Cells
+* Cell
+    * Row
+    * Column
+    * Symbol
+* Human Player
+    * Name
+    * Email
+    * Profile Image
+* Bot Player
+    * Difficulty Level
 
----
+## Design
 
-## 🧱 Core Entities
-
-| Entity         | Attributes                                      |
-|----------------|--------------------------------------------------|
-| Game           | Board, Players, Moves, GameState, Strategies     |
-| Player         | Name, Symbol, PlayerType                         |
-| Bot            | DifficultyLevel, Strategy                        |
-| Human          | Name, Email, Image                               |
-| Board          | Cells, Size                                      |
-| Cell           | Row, Col, Player, State                          |
-| Move           | Player, Cell                                     |
-| Strategy       | Row/Col/Diagonal, Easy/Hard bot strategies       |
-
----
-
-## 🧩 Design Diagrams
-
-### ✅ Use Case Diagram
-
+### Use Case Diagram
 ```plantuml
 @startuml
-actor Human
+left to right direction
+actor HumanPlayer
 actor Bot
 rectangle Game {
-  Human -- (Start Game)
-  Human -- (Make Move)
+  HumanPlayer -- (Start Game)
+  HumanPlayer -- (Make Move)
   Bot -- (Make Move)
+    HumanPlayer -- (Register)
+
   (Make Move) .> (Check Winner) : includes
 }
+
 @enduml
 ```
 
----
+### API or CLI Design
+The usecase diagram gives us a good idea of the API design. We can have the following APIs:
+* Register a player
+    * `API` - `POST /register` - `{"name": "Paul Morphy", "email": "blind@chess.in", ...}`
+    * `CLI` - `tictactoe register --name <name> --email <email> --profile-image <profile-image>`
+* Start a game
+    * `API` - `POST /game/start` - `{"player1": "paul", "player2": "bot", "board-size": 3}`
+    * `CLI` - `tictactoe start --player1 <player1> --player2 <player2> --board-size <board-size>`
+* Make a move
+    * `API` - `POST /game/move` - `{"player": "paul", "row": 1, "column": 2}`
+    * `CLI` - `tictactoe move --player <player> --row <row> --column <column>`
 
-### ✅ Class Diagram (Cleaned LLD)
+### Class Diagram
+
+#### Initial design
+```mermaid
+classDiagram
+  class Game {
+    - Board board
+    - HumanPlayer humanPlayer
+    - BotPlayer botPlayer
+    +startGame(HumanPlayer, BotPlayer, int)
+    +makeMove(PlayerId, int, int)
+    +checkWinner(Board, HumanPlayer, BotPlayer) : PlayerId
+    +registerPlayer(HumanPlayer)
+  }
+
+  class Board {
+    -Cell[][] cells
+    +Board(int size) : Board
+  }
+
+  class Cell {
+    -int row
+    -int column
+    -Symbol symbol
+  }
+
+  class HumanPlayer {
+    -String name
+    -String email
+    -Byte[] profileImage
+    +play(Board) BoardCell
+  }
+
+  class BotPlayer {
+    -Level difficultyLevel
+    +play(Board) BoardCell
+
+  }
+
+  Game "1" --* "1" Board
+  Game "1" --* "*" HumanPlayer
+  Game "1" --* "1" BotPlayer
+
+  Board "1" --* "*" Cell
+```
+
+**Problems:**
+* The Game class is tightly coupled with the HumanPlayer and BotPlayer classes. It is not extensible to support any other type of player and number of players.
+* There is no common contract for the players.
+* `Huge memory consumption` - A player can play multiple games at the same time. Each will have a new `HumanPlayer` object. Each player object will have the profile image. This will consume a lot of memory.
+* Implementing the `play` method for the bot player will lead to SRP and OCP violations because it will be deciding the move based on the difficulty level. This will lead to a lot of if-else conditions.
+
+#### Adding a contract for players using an abstract class
+```mermaid
+classDiagram
+  class Game {
+    - Board board
+    - Player[] players
+    +startGame(Player[], int)
+    +makeMove(PlayerId, int, int)
+    +checkWinner(Board, HumanPlayer, BotPlayer) : PlayerId
+    +registerPlayer(Player)
+  }
+
+  class Player {
+    <<abstract>>
+    -Symbol symbol
+    +play(Board) BoardCell
+  }
+
+  class HumanPlayer {
+    -String name
+    -String email
+    -Byte[] profileImage
+    +play(Board) BoardCell
+  }
+
+  class BotPlayer {
+    -Level difficultyLevel
+    +play(Board) BoardCell
+
+  }
+
+  Game "1" --* "*" Player
+  Player <|-- HumanPlayer
+  Player <|-- BotPlayer
+```
+
+**Problems so far:**
+* ~~The Game class is tightly coupled with the HumanPlayer and BotPlayer classes. It is not extensible to support any other type of player and number of players.~~
+* ~~There is no common contract for the players.~~
+* `Huge memory consumption` - A player can play multiple games at the same time. Each will have a new `HumanPlayer` object. Each player object will have the profile image. This will consume a lot of memory.
+* Implementing the `play` method for the bot player will lead to SRP and OCP violations because it will be deciding the move based on the difficulty level. This will lead to a lot of if-else conditions.
+
+#### Solving the memory consumption problem using Flyweight pattern
 
 ```mermaid
 classDiagram
   class Game {
     - Board board
-    - List~Player~ players
-    - List~WinningStrategy~ winningStrategies
-    - List~Move~ moves
-    + startGame()
-    + makeMove()
-    + undo()
+    - Player[] players
+    +startGame(Player[], int)
+    +makeMove(PlayerId, int, int)
+    +checkWinner(Board, Player[]) : Player
+    +registerPlayer(Player)
   }
 
   class Player {
     <<abstract>>
-    - Symbol symbol
-    - PlayerType type
-    + makeMove(Board) Move
+    -Symbol symbol
+    +play(Board) BoardCell
   }
 
   class HumanPlayer {
-    - String name
-    - String email
-    - Byte[] profileImage
-    + makeMove(Board) Move
+    -User user
+    +play(Board) BoardCell
   }
 
-  class Bot {
-    - BotDifficultyLevel difficultyLevel
-    - BotPlayingStrategy strategy
-    + makeMove(Board) Move
+  class User {
+    -String name
+    -String email
+    -Byte[] profileImage
   }
 
-  class BotPlayingStrategy {
-    <<interface>>
-    + makeMove(Board) Move
+  class BotPlayer {
+    -Level difficultyLevel
+    +play(Board) BoardCell
   }
 
-  class EasyBotPlayingStrategy
-  class MediumBotPlayingStrategy
-  class HardBotPlayingStrategy
+  Game "1" --* "*" Player
+  HumanPlayer "*" --o "1" User
+  Player <|-- HumanPlayer
+  Player <|-- BotPlayer
 
-  class WinningStrategy {
-    <<interface>>
-    + checkWinner(Board, Move): boolean
+```
+
+**Problems so far:**
+* ~~`Huge memory consumption` - A player can play multiple games at the same time. Each will have a new `HumanPlayer` object. Each player object will have the profile image. This will consume a lot of memory.~~
+* Implementing the `play` method for the bot player will lead to SRP and OCP violations because it will be deciding the move based on the difficulty level. This will lead to a lot of if-else conditions.
+
+#### Fixing the SRP and OCP violations using Strategy pattern
+
+```mermaid
+classDiagram
+  class BotPlayer {
+    -Level difficultyLevel
+    -MoveStrategy moveStrategy
+    +play(Board) BoardCell
   }
 
-  class RowWinningStrategy
-  class ColWinningStrategy
-  class DiagonalWinningStrategy
+    class MoveStrategy {
+        <<interface>>
+        +makeMove(Board) BoardCell
+    }
 
-  class Board {
-    - List~List~Cell~~ cells
-    - int dimension
+    class RandomMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+    class ClusteringMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+    class MinimaxMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+    BotPlayer "*" --o "1" MoveStrategy
+    MoveStrategy <|-- RandomMoveStrategy
+    MoveStrategy <|-- ClusteringMoveStrategy
+    MoveStrategy <|-- MinimaxMoveStrategy
+```
+
+**Problems so far:**
+* ~~`Huge memory consumption` - A player can play multiple games at the same time. Each will have a new `HumanPlayer` object. Each player object will have the profile image. This will consume a lot of memory.~~
+* ~~Implementing the `play` method for the bot player will lead to SRP and OCP violations because it will be deciding the move based on the difficulty level. This will lead to a lot of if-else conditions.~~
+
+### Complete Class Diagram
+
+```mermaid
+classDiagram
+  class Game {
+    - Board board
+    - Player[] players
+    +startGame(Player[], int)
+    +makeMove(PlayerId, int, int)
+    +checkWinner(Board, Player[]) : Player
+    +registerPlayer(Player)
+  }
+
+    class Board {
+    -Cell[][] cells
+    +Board(int size) : Board
   }
 
   class Cell {
-    - int row
-    - int col
-    - CellState state
-    - Player player
+    -int row
+    -int column
+    -Symbol symbol
   }
 
-  class Move {
-    - Player player
-    - Cell cell
+  class Player {
+    <<abstract>>
+    -Symbol symbol
+    +play(Board) BoardCell
   }
 
-  Game --> Board
-  Game --> Player
-  Game --> WinningStrategy
-  Game --> Move
+  class HumanPlayer {
+    -User user
+    +play(Board) BoardCell
+  }
+
+  class User {
+    -String name
+    -String email
+    -Byte[] profileImage
+  }
+
+  class BotPlayer {
+    -Level difficultyLevel
+    -MoveStrategy moveStrategy
+    +play(Board) BoardCell
+  }
+
+    class MoveStrategy {
+        <<interface>>
+        +makeMove(Board) BoardCell
+    }
+
+    class RandomMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+    class ClusteringMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+    class MinimaxMoveStrategy {
+        +makeMove(Board) BoardCell
+    }
+
+  Game "1" --* "*" Player
+    Game "1" --* "1" Board
+    Board "1" --* "*" Cell
+  HumanPlayer "*" --o "1" User
   Player <|-- HumanPlayer
-  Player <|-- Bot
-  Bot --> BotPlayingStrategy
-  BotPlayingStrategy <|-- EasyBotPlayingStrategy
-  BotPlayingStrategy <|-- MediumBotPlayingStrategy
-  BotPlayingStrategy <|-- HardBotPlayingStrategy
-  WinningStrategy <|-- RowWinningStrategy
-  WinningStrategy <|-- ColWinningStrategy
-  WinningStrategy <|-- DiagonalWinningStrategy
-  Board --> Cell
-  Move --> Player
-  Move --> Cell
+  Player <|-- BotPlayer
+  BotPlayer "*" --o "1" MoveStrategy
+  MoveStrategy <|-- RandomMoveStrategy
+  MoveStrategy <|-- ClusteringMoveStrategy
+  MoveStrategy <|-- MinimaxMoveStrategy
 ```
 
----
+### Future requirement - Different winning conditions for different number of players
 
-## 🚀 Features
+* We want to support different winning conditions for different number of players.
+* Games can same winning conditions for different number of players and different winning conditions for same number of players.
+* Solution - Use a strategy pattern to decide the winning condition for a game.
 
-- CLI-based game with undo support
-- NxN board support
-- Configurable winning strategies
-- Bot difficulty control via Strategy pattern
-- Proper abstraction via interfaces and factories
+```mermaid
+classDiagram
+  class Game {
+    - Board board
+    - Player[] players
+    - WinningStrategy winningStrategy
+    +startGame(Player[], int)
+    +makeMove(PlayerId, int, int)
+    +checkWinner(Board, Player[]) : Player
+    +registerPlayer(Player)
+  }
 
----
+  class WinningStrategy {
+    <<interface>>
+    +checkWinner(Board, Player[]) : Player
+  }
 
-## 📁 Package Structure
+    class NInARowWinningStrategy {
+        +checkWinner(Board, Player[]) : Player
+    }
 
+    class NInAColumnWinningStrategy {
+        +checkWinner(Board, Player[]) : Player
+    }
+
+    class NInADiagonalWinningStrategy {
+        +checkWinner(Board, Player[]) : Player
+    }
+
+    Game "*" --o "1" WinningStrategy
+    WinningStrategy <|-- NInARowWinningStrategy
+    WinningStrategy <|-- NInAColumnWinningStrategy
+    WinningStrategy <|-- NInADiagonalWinningStrategy
 ```
-src/
-└── main/
-    └── java/
-        └── com/sarvesh/LLD3/TicTacToe/
-            ├── controller/        # GameController
-            ├── exception/         # InvalidMoveException
-            ├── factory/           # Bot strategy factory
-            ├── model/             # Game, Player, Board, Cell, Move
-            ├── strategy/
-            │   ├── botplayingstrategy/
-            │   └── winningstrategy/
-```
 
----
+## Implementation of Tic Tac Toe
 
-## 📌 Future Scope
+### Version V0 
+* Implement all the basic requirements. 
+* API's : 
+  * initiateGame() : helps create an instance of Game based on size of board, List<player>, List<winningStrategy>.
+  * startGame() : helps to start the game and ask to makeMove for every player turn until draw or win.
+  * createHumanPlayer() : helps create human player with details from user like name, symbol.
+  * createBotPlayer() : helps create bot player with details from user like name, symbol, difficulty level. 
+* Follow a 3 tier architecture and use different packages based on responsibility. /controllers, /services, /models, /exceptions, /dtos, /enums, /strategies, /factories etc.
 
-- Convert CLI to REST API (Spring Boot)
-- Add frontend for gameplay visualization
-- Add game analytics and historical stats
-- Tournament mode with multiple players
+### Improvements Needed after V0 version of Tic Tac Toe.  
+* makeMove() method of HumanPlayer is tightly coupled with input type e.g., CommandLine interface , RestAPI interface etc. 
+* Adding support for Undo operation. 
 
----
+### Version V1 
+* Use strategy pattern to avoid input type tightly coupled with makeMove() implementation. 
+  ```mermaid
+  classDiagram
+  class HumanPlayerInputStrategy {
+  <<interface>>
+  +makeMove(Board) : Move
+  }
+  
+      class CommandLineInputStrategy {
+        +makeMove(Board) : Move
+      }
+  
+    HumanPlayerInputStrategy <|-- CommandLineInputStrategy
+  ```
 
-🧠 Designed using SOLID principles, Strategy pattern, and extensible game architecture.
+## Side assignment (Feature Suggestions)
+* A common requirement in games is to undo the last move. How would you design your system to support this requirement?
+* Replay of Moves. 
+### To support Undo last move operation for only human player.
+* **BruteForce :** Maintain Stack<Move> in Game class
+  * TC : O(1)  SC: O(N^2)
+* Can we optimize it further ?
+* Yes, we only need to undo Last move after every move of a human player, we don't need to maintain Stack<Move> & just need recent move.
+* **Idea 2:** Maintain Move recentMove & revert below changes
+  * game.nextPlayerIndex
+  * Board state e.g., cellState , cellPlayer , countEmptyCells etc..
+  * TC: O(1) SC: O(1)
+
+### To Support Replay of Moves after game ends.
+* **BruteForce:** Maintain List<Board> snapshots --> deep copies of Board object for a game & print the board for each snapshot.
+  * TC: O(N^4) SC: O(N^2)
+  * Can we optimize it further ?
+  * Yes, We need to only display Board & Symbol for a cell.
+* **Idea 2:** Maintain List<Cell> moves for a game & traverse this list & populate each cell & display board for each move.
+  * TC: O(N^4) SC: O(N^2)
+  * Can we optimize it further ?
+  * Yes, Do we really need to store List<Cell> or we just need (row,col) info of a cell? We can get other info about a cell using board instance of a game.
+* **Idea 3:** Maintain List<Move> moves for a game & create a new board instance &  traverse this list & populate cell info in board instance & display board for every move.
+  * TC: O(N^4) SC: O(N^2)
+
+### Create this as a new SpringBoot application with API's exposed so that in future I can connect to Frontend. So, that I can put it in my resume. 
